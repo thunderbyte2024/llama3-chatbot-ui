@@ -1,3 +1,4 @@
+
 const API_KEY = "tgp_v1_A7lt4a5E93XTwL3fXNbI1xOl5yknaB4a6KBsNHJbnds";
 const API_URL = "https://api.together.xyz/v1/chat/completions";
 
@@ -6,26 +7,16 @@ const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const voiceSelect = document.getElementById("voiceSelect");
 const muteToggle = document.getElementById("muteToggle");
-const darkToggle = document.getElementById("darkToggle");
-const clearChatBtn = document.getElementById("clearChatBtn");
+const historyList = document.getElementById("historyList");
 
 let voices = [];
+let messageHistory = [];
 
-function renderChatHistory() {
-  const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
-  chatbox.innerHTML = "";
-  history.forEach(({ role, content }) => {
-    const div = document.createElement("div");
-    div.className = role === "user" ? "user" : "ai";
-    div.innerHTML = `<strong>${role === "user" ? "You" : "AI"}:</strong> ${content}`;
-    chatbox.appendChild(div);
-  });
-  chatbox.scrollTop = chatbox.scrollHeight;
-}
-
+// Load available voices and populate dropdown
 function populateVoices() {
   voices = speechSynthesis.getVoices();
   voiceSelect.innerHTML = "";
+
   voices.forEach((voice, index) => {
     const option = document.createElement("option");
     option.value = index;
@@ -36,29 +27,34 @@ function populateVoices() {
 
 speechSynthesis.onvoiceschanged = populateVoices;
 
+// Add a chat message to sidebar history
+function addToHistory(prompt) {
+  const li = document.createElement("li");
+  li.textContent = prompt.length > 30 ? prompt.slice(0, 30) + "..." : prompt;
+  li.style.cursor = "pointer";
+  li.style.padding = "4px";
+  li.onclick = () => {
+    userInput.value = prompt;
+    userInput.focus();
+  };
+  historyList.prepend(li);
+}
+
+// Main button click handler
 sendBtn.addEventListener("click", async () => {
   const message = userInput.value.trim();
   if (!message) return;
 
-  chatbox.innerHTML += `<div class="user"><strong>You:</strong> ${message}</div>`;
+  chatbox.innerHTML += `<div><strong>You:</strong> ${message}</div>`;
   chatbox.scrollTop = chatbox.scrollHeight;
   userInput.value = "";
 
-  let history = JSON.parse(localStorage.getItem("chatHistory")) || [];
-  history.push({ role: "user", content: message });
-  localStorage.setItem("chatHistory", JSON.stringify(history));
-
-  const typingDiv = document.createElement("div");
-  typingDiv.id = "typing";
-  typingDiv.textContent = "AI is typing...";
-  typingDiv.style.fontStyle = "italic";
-  typingDiv.style.color = "#999";
-  chatbox.appendChild(typingDiv);
-  chatbox.scrollTop = chatbox.scrollHeight;
+  messageHistory.push({ role: "user", content: message });
+  addToHistory(message);
 
   const payload = {
     model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-    messages: [{ role: "user", content: message }],
+    messages: messageHistory,
     stream: false
   };
 
@@ -75,34 +71,59 @@ sendBtn.addEventListener("click", async () => {
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || "⚠️ No response.";
 
-    document.getElementById("typing")?.remove();
-    chatbox.innerHTML += `<div class="ai"><strong>AI:</strong> ${reply}</div>`;
+    chatbox.innerHTML += `<div><strong>AI:</strong> ${reply}</div>`;
     chatbox.scrollTop = chatbox.scrollHeight;
-
-    history.push({ role: "assistant", content: reply });
-    localStorage.setItem("chatHistory", JSON.stringify(history));
+    messageHistory.push({ role: "assistant", content: reply });
 
     if (!muteToggle.checked) {
       const utterance = new SpeechSynthesisUtterance(reply);
       const selectedVoice = voices[voiceSelect.value];
-      if (selectedVoice) utterance.voice = selectedVoice;
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
       speechSynthesis.speak(utterance);
     }
 
   } catch (error) {
     console.error("API Error:", error);
-    document.getElementById("typing")?.remove();
     chatbox.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${error.message}</div>`;
   }
 });
 
-darkToggle.addEventListener("change", () => {
-  document.body.classList.toggle("dark", darkToggle.checked);
+// Voice-to-text using SpeechRecognition API
+window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.lang = "en-US"; // Change to "fil-PH" if Filipino is supported
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
+
+const micBtn = document.createElement("button");
+micBtn.textContent = "🎙️ Speak";
+micBtn.style.padding = "8px";
+micBtn.style.backgroundColor = "#28a745";
+micBtn.style.color = "white";
+micBtn.style.border = "none";
+micBtn.style.borderRadius = "6px";
+micBtn.style.cursor = "pointer";
+micBtn.style.marginTop = "8px";
+
+document.querySelector(".bottom-bar").appendChild(micBtn);
+
+micBtn.addEventListener("click", () => {
+  recognition.start();
+  micBtn.textContent = "🎙️ Listening...";
+  micBtn.disabled = true;
 });
 
-clearChatBtn.addEventListener("click", () => {
-  localStorage.removeItem("chatHistory");
-  renderChatHistory();
+// When speech is recognized
+recognition.addEventListener("result", (event) => {
+  const transcript = event.results[0][0].transcript;
+  userInput.value = transcript;
+  sendBtn.click();
 });
 
-renderChatHistory();
+// Reset button state
+recognition.addEventListener("end", () => {
+  micBtn.textContent = "🎙️ Speak";
+  micBtn.disabled = false;
+});

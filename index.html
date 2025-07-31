@@ -1,33 +1,68 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Llama-3 Chatbot</title>
   <style>
+    :root {
+      --bg-light: #f4f7f9;
+      --bg-dark: #1e1e1e;
+      --text-light: #333;
+      --text-dark: #f0f0f0;
+      --container-bg-light: white;
+      --container-bg-dark: #2d2d2d;
+      --chat-bg: #fafafa;
+    }
+
     body {
       font-family: "Segoe UI", sans-serif;
-      background: #f4f7f9;
       margin: 0;
       padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       height: 100vh;
+      display: flex;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+      --chat-bg: #2a2a2a;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #eeeeee;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .sidebar.dark-mode {
+      background-color: #1b1b1b;
+      color: #ccc;
     }
 
     .container {
-      background: white;
-      width: 100%;
+      flex-grow: 1;
+      background: var(--container-bg-light);
       max-width: 600px;
+      margin: auto;
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: background 0.3s;
+    }
+
+    body.dark-mode .container {
+      background: var(--container-bg-dark);
     }
 
     h2 {
       text-align: center;
       margin-bottom: 10px;
-      color: #333;
     }
 
     #chatbox {
@@ -36,21 +71,14 @@
       border-radius: 8px;
       padding: 10px;
       overflow-y: auto;
-      background-color: #fafafa;
       margin-bottom: 12px;
       font-size: 14px;
+      background-color: var(--chat-bg);
+      color: inherit;
     }
 
     #chatbox div {
       margin-bottom: 8px;
-    }
-
-    .user {
-      color: #0059b3;
-    }
-
-    .ai {
-      color: #2d8659;
     }
 
     .controls {
@@ -97,49 +125,29 @@
       gap: 8px;
     }
 
-    body.dark {
-      background-color: #121212;
-      color: #e0e0e0;
-    }
-
-    body.dark .container {
-      background-color: #1e1e1e;
-      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05);
-    }
-
-    body.dark #chatbox {
-      background-color: #2a2a2a;
-      border-color: #444;
-    }
-
-    body.dark input[type="text"],
-    body.dark select {
-      background-color: #2a2a2a;
-      color: #e0e0e0;
-      border-color: #444;
-    }
-
-    body.dark button {
-      background-color: #333;
-      color: white;
-    }
-
-    body.dark button:hover {
-      background-color: #555;
+    #toggleDarkMode {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
+  <div class="sidebar" id="historyPanel">
+    <h4>🗂 Chat History</h4>
+    <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
+  </div>
+
   <div class="container">
     <h2>🦙 Llama-3 Conversational AI</h2>
-	<h3>https://thunderbyte2024.github.io/llama3-chatbot-ui/</h3>
     <div id="chatbox"></div>
 
     <div class="controls">
       <select id="voiceSelect"></select>
-      <label><input type="checkbox" id="muteToggle"> 🔇 Mute Voice</label>
-      <label><input type="checkbox" id="darkToggle"> 🌙 Dark Mode</label>
-      <button id="clearChatBtn">🧹 Clear Chat</button>
+      <label>
+        <input type="checkbox" id="muteToggle"> 🔇 Mute Voice
+      </label>
+      <button id="toggleDarkMode">🌙 Toggle Dark Mode</button>
     </div>
 
     <div class="bottom-bar">
@@ -149,6 +157,11 @@
   </div>
 
   <script src="chat.js"></script>
+  <script>
+    document.getElementById("toggleDarkMode").onclick = () => {
+      document.body.classList.toggle("dark-mode");
+      document.getElementById("historyPanel").classList.toggle("dark-mode");
+    };
+  </script>
 </body>
-<footer>Copyright©2025 by Engr. Antony Salangsang</footer>
 </html>
