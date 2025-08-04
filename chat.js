@@ -1,4 +1,4 @@
-const API_KEY = "tgp_v1_A7lt4a5E93XTwL3fXNbI1xOl5yknaB4a6KBsNHJbnds";
+
 const API_URL = "https://api.together.xyz/v1/chat/completions";
 
 const chatbox = document.getElementById("chatbox");
@@ -72,3 +72,4 @@ if (!muteToggle.checked) {
     chatbox.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${error.message}</div>`;
   }
 });
+
